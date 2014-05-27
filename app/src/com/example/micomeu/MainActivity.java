@@ -10,8 +10,12 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.app.ActionBar;
@@ -84,37 +88,49 @@ public class MainActivity extends ActionBarActivity {
 	}
 	
 	public void sendStory(View view) {
-		Intent intent = new Intent(this,DisplayStoryActivity.class);
+		//Intent intent = new Intent(this,DisplayStoryActivity.class);
+		// Get story as string from view
 		EditText editText = (EditText) findViewById(R.id.edit_story);
-		
-		// Get user text and put it in a namevaluepair
 		String text = editText.getText().toString();
-		NameValuePair user_data = new BasicNameValuePair("user-text", text);
 		
+		// Store story in a json object
+		JSONObject jsonObj = new JSONObject();
+		try {
+			jsonObj.put("text", text);
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// Send user data to server through a post
-		postData(user_data);
+		postData(jsonObj.toString(), getResources().getString(R.string.server_url));
 	}
 	
-	public void postData(NameValuePair data) {
-	    // Create a new HttpClient and Post Header
-	    HttpClient httpclient = new DefaultHttpClient();
-	    HttpPost httppost = new HttpPost("http://192.168.25.11:8000/server");
-
+	public String postData(String data, String url) {
+		String responseData;
 	    try {
-	        // Add your data
-	        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-	        nameValuePairs.add(new BasicNameValuePair("id", "12345"));
-	        nameValuePairs.add(new BasicNameValuePair("stringdata", "Hi"));
-	        httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+		    // Create a new HttpClient and Post Header
+		    HttpClient client = new DefaultHttpClient();
+		    HttpPost post = new HttpPost(url);
+		    
+		    // Append the json string to Post
+	        post.setEntity(new StringEntity(data));
+	        post.setHeader("Accept", "application/json");
+	        post.setHeader("Content-type", "application/json");
 
 	        // Execute HTTP Post Request
-	        HttpResponse response = httpclient.execute(httppost);
+	        HttpResponse response = client.execute(post);
+	        
+	        // Get story of other user as json from the response
+	        responseData = EntityUtils.toString(response.getEntity(), "utf-8");
+	        
+	        if (responseData == null || responseData.isEmpty())
+	        	throw new Exception();
 
-	    } catch (ClientProtocolException e) {
-	        // TODO Auto-generated catch block
-	    } catch (IOException e) {
-	        // TODO Auto-generated catch block
+	    } catch (Exception e) {
+	    	responseData = getResources().getString(R.string.server_error);
 	    }
+	    System.out.println(responseData);
+	    return responseData;
 	} 
 
 }

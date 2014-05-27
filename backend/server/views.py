@@ -1,22 +1,25 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from server.models import Story
 
+@csrf_exempt
 def process(request):
-
 	# Get json data from request if it's available
 	if request.method == 'POST':
 		json_data = request.body
 		# Store user story in database
 		data = json.loads(json_data)
+		print data
 		Story(text = data["text"], rating = 0).save()
 
 	# Retriving best story not read from database
-	id_read = [1,2]
+	id_read = []
 	try:
 		sent_story = Story.objects.exclude(id__in = id_read)[0]
 		# Transform the story model in json format
@@ -27,4 +30,5 @@ def process(request):
 
 	# Send story back in json format through the response object
 	response_data = json.dumps(sent_story, ensure_ascii=False)
+	
 	return HttpResponse(response_data, content_type="application/json")

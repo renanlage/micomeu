@@ -2,6 +2,10 @@
 <resources>
 
     <string name="app_name">Mico Meu</string>
+    
+    <string name="server_url">http://192.168.25.11:8000/server/</string>
+    <string name="server_error">Não foi possível conectar ao servidor&#8230;</string>
+    
     <string name="edit_story">Escreva seu mico aqui</string>
     <string name="send_story">Enviar</string>
     <string name="action_settings">Settings</string>
