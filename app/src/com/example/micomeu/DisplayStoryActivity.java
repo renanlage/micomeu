@@ -1,48 +1,82 @@
 package com.example.micomeu;
 
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.os.Build;
 
 public class DisplayStoryActivity extends ActionBarActivity {
-
+	
+	private JSONObject storyObj;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		if (savedInstanceState == null) {
-			getSupportFragmentManager().beginTransaction()
-					.add(R.id.container, new PlaceholderFragment()).commit();
-		}
+		setContentView(R.layout.fragment_display_story);
 		
 		// Get the message from the intent
 		Intent intent = getIntent();
-		String story = intent.getStringExtra(MainActivity.EXTRA_STORY);
+		String jsonStr = intent.getStringExtra(MainActivity.SERVER_STORY);
 	
-		// Create the text view
-		TextView textView = new TextView(this);
-		textView.setTextSize(40);
-		textView.setText(story);
+		// Obtain user story in json data
+		String story;
+		String id = "0";
+		try {
+			// If the json string is empty show the error message
+			if (jsonStr.equals("")) {
+				story = getResources().getString(R.string.no_story_error);
+			} else {
+				// Get text and id from json
+				storyObj = new JSONObject(jsonStr);
+				story = (String) storyObj.get("text");
+				int tempId = (Integer) storyObj.get("id");
+				id = Integer.toString(tempId);
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+			story = getResources().getString(R.string.server_error);
+		}
+
+		// Save story as read if it was loaded
+		if (storyObj != null) {
+			
+			// Load shared preferences to mark story as read
+			SharedPreferences sharedPref = getSharedPreferences(
+			        getString(R.string.preference_file), Context.MODE_PRIVATE);
+			
+			// Get the set with ids of read stories
+			Set<String> read_ids = sharedPref.getStringSet(
+					getString(R.string.saved_ids), new HashSet<String>());
+			
+			// Append id if story read
+			SharedPreferences.Editor editor = sharedPref.edit();
+			read_ids.add(id);
+			editor.putStringSet(getString(R.string.saved_ids), read_ids);
+			editor.commit();
+			
+		// Disable like and dislike buttons if story was not received
+		} else {
+			findViewById(R.id.like_story).setEnabled(false);
+			findViewById(R.id.dislike_story).setEnabled(false);
+		}
 		
-		// Set the text view as the activity layout
-		setContentView(textView);
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.display_story, menu);
-		return true;
+		// Set the text in the story_view to the other user story
+		TextView storyView = (TextView) findViewById(R.id.story_view);
+		storyView.setText(story);
 	}
 
 	@Override
@@ -73,5 +107,31 @@ public class DisplayStoryActivity extends ActionBarActivity {
 			return rootView;
 		}
 	}
-
+		
+	public void rateStory(View view) {
+		
+		// Check if user hit the like or dislike button
+		boolean likeStory = false;
+	    if (view.getId() == R.id.like_story) {
+	    	likeStory = true;
+		
+	    	// Update rating if user hit like button
+			try {
+				// Store json object with value of user rating
+				JSONObject storyRate = getStoryObj();	
+				storyRate.put("like", likeStory);
+				
+				// Post json data with rating to server
+				Utility.postJsonData(storyRate.toString(), getResources().getString(R.string.server_rate_story));
+			
+			} catch (Exception e) {
+				getResources().getString(R.string.server_error);
+				e.printStackTrace();
+			}
+	    }
+	    // Go back to main activity after sending rating
+	    NavUtils.navigateUpFromSameTask(this);
+	}
+	
+	public JSONObject getStoryObj() { return storyObj; }
 }

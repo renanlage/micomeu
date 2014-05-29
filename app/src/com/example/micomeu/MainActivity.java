@@ -1,40 +1,30 @@
 package com.example.micomeu;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.app.ActionBar;
-import android.support.v4.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
+import android.text.format.Time;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
-import android.os.Build;
 
 public class MainActivity extends ActionBarActivity {
 
-	public final static String EXTRA_STORY = "com.example.micomeu.STORY";
-	
+	public final static String SERVER_STORY = "com.example.micomeu.SERVER_STORY";
+		
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		
@@ -43,7 +33,33 @@ public class MainActivity extends ActionBarActivity {
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		// Check if user can view another story
+		// Get the current time in milliseconds
+		Time today = new Time(Time.getCurrentTimezone());
+		today.setToNow();
+		long now_time = today.toMillis(false);
+		
+		// Get last saved time
+		SharedPreferences sharedPref = getSharedPreferences(getString(R.string.preference_file), Context.MODE_PRIVATE);
 
+		long numViews = sharedPref.getLong(getString(R.string.num_views), 1000);
+		long saved_time = sharedPref.getLong(getString(R.string.last_access_time), now_time);
+				
+		// Increment in 1 for each day since last visit
+		today.setToNow();
+		now_time = today.toMillis(false);
+		long time_passed = (now_time - saved_time) / Long.valueOf(86400000);
+		numViews += time_passed;
+		
+		// If any number of views was incremented update on shared preferences
+		if (time_passed > 0) {
+			SharedPreferences.Editor editor = sharedPref.edit();
+			editor.putLong(getString(R.string.last_access_time), now_time);
+			editor.commit();
+		}
+		
+		
 		if (savedInstanceState == null) {
 			getSupportFragmentManager().beginTransaction()
 					.add(R.id.container, new PlaceholderFragment()).commit();
@@ -88,49 +104,45 @@ public class MainActivity extends ActionBarActivity {
 	}
 	
 	public void sendStory(View view) {
-		//Intent intent = new Intent(this,DisplayStoryActivity.class);
-		// Get story as string from view
-		EditText editText = (EditText) findViewById(R.id.edit_story);
-		String text = editText.getText().toString();
-		
-		// Store story in a json object
-		JSONObject jsonObj = new JSONObject();
-		try {
-			jsonObj.put("text", text);
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// Send user data to server through a post
-		postData(jsonObj.toString(), getResources().getString(R.string.server_url));
-	}
-	
-	public String postData(String data, String url) {
+		// Intent to store the server response data
+		Intent intent = new Intent(this, DisplayStoryActivity.class);
 		String responseData;
-	    try {
-		    // Create a new HttpClient and Post Header
-		    HttpClient client = new DefaultHttpClient();
-		    HttpPost post = new HttpPost(url);
-		    
-		    // Append the json string to Post
-	        post.setEntity(new StringEntity(data));
-	        post.setHeader("Accept", "application/json");
-	        post.setHeader("Content-type", "application/json");
+		
+		// Load shared preferences to send list of read stories
+		SharedPreferences sharedPref = getSharedPreferences(
+		        getString(R.string.preference_file), Context.MODE_PRIVATE);
+		
+		// Get the set with ids of read stories
+		Set<String> ids_read = sharedPref.getStringSet(
+				getString(R.string.saved_ids), new HashSet<String>());
+		
+		try {
+			JSONObject jsonObj = new JSONObject();
+			
+			// Store text in json object if story was sent
+			if (view.getId() == R.id.send_story) {
+				
+				// Get story as string from view
+				EditText editText = (EditText) findViewById(R.id.edit_story);
+				String text = editText.getText().toString();
+				
+				// Store story in a json object
+				jsonObj.put("text", text);
+			}
+			
+			// Store the list of read stories
+			jsonObj.put("ids_read", new JSONArray(ids_read));
+			
+			// Post user data to server as json object
+			// retrieve response from server with other story as json string
+			responseData = Utility.postJsonData(jsonObj.toString(), getResources().getString(R.string.server_send_story));
 
-	        // Execute HTTP Post Request
-	        HttpResponse response = client.execute(post);
-	        
-	        // Get story of other user as json from the response
-	        responseData = EntityUtils.toString(response.getEntity(), "utf-8");
-	        
-	        if (responseData == null || responseData.isEmpty())
-	        	throw new Exception();
-
-	    } catch (Exception e) {
-	    	responseData = getResources().getString(R.string.server_error);
-	    }
-	    System.out.println(responseData);
-	    return responseData;
-	} 
-
+		} catch (Exception e) {
+			e.printStackTrace();
+			responseData = getResources().getString(R.string.server_error);
+		}
+		// Add response story to intent and pass it to next view
+		intent.putExtra(SERVER_STORY, responseData);
+		startActivity(intent);
+	}
 }

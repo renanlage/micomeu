@@ -13,6 +13,7 @@ class Story(models.Model):
 
 	def to_json(self):
 		return {
-				'text': self.text,
-				'rating': self.rating,
+				"id": self.id,
+				"text": self.text,
+				"rating": self.rating,
 				}
