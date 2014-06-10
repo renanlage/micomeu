@@ -15,8 +15,12 @@ import android.support.v4.app.NavUtils;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 public class DisplayStoryActivity extends ActionBarActivity {
@@ -33,8 +37,7 @@ public class DisplayStoryActivity extends ActionBarActivity {
 		String jsonStr = intent.getStringExtra(MainActivity.SERVER_STORY);
 	
 		// Obtain user story in json data
-		String story;
-		String id = "0";
+		String story, score = "0", id = "0";
 		try {
 			// If the json string is empty show the error message
 			if (jsonStr.equals("")) {
@@ -43,6 +46,7 @@ public class DisplayStoryActivity extends ActionBarActivity {
 				// Get text and id from json
 				storyObj = new JSONObject(jsonStr);
 				story = (String) storyObj.get("text");
+				score = Integer.toString((Integer) storyObj.get("rating"));
 				int tempId = (Integer) storyObj.get("id");
 				id = Integer.toString(tempId);
 			}
@@ -68,15 +72,30 @@ public class DisplayStoryActivity extends ActionBarActivity {
 			editor.putStringSet(getString(R.string.saved_ids), read_ids);
 			editor.commit();
 			
-		// Disable like and dislike buttons if story was not received
+		// Disable ratingbar and send button if story not received
 		} else {
-			findViewById(R.id.like_story).setEnabled(false);
-			findViewById(R.id.dislike_story).setEnabled(false);
+			Button sendRate = (Button) findViewById(R.id.send_rate);
+			sendRate.setEnabled(false);
+			sendRate.setTextColor(getResources().getColor(R.color.disabled_button));
+			
+			RatingBar ratingBar = (RatingBar)findViewById(R.id.rating_bar);
+			ratingBar.setOnTouchListener(new OnTouchListener() {
+			        public boolean onTouch(View v, MotionEvent event) {
+			            return true;
+			        }
+			    });
+			ratingBar.setFocusable(false);
+			ratingBar.setVisibility(View.GONE);
+			TextView scoreView = (TextView) findViewById(R.id.story_score);
+			scoreView.setVisibility(View.GONE);
 		}
 		
 		// Set the text in the story_view to the other user story
 		TextView storyView = (TextView) findViewById(R.id.story_view);
 		storyView.setText(story);
+		// Set the text in the score view to the story rating
+		TextView scoreView = (TextView) findViewById(R.id.story_score);
+		scoreView.setText(score);
 	}
 
 	@Override
@@ -110,28 +129,30 @@ public class DisplayStoryActivity extends ActionBarActivity {
 		
 	public void rateStory(View view) {
 		
-		// Check if user hit the like or dislike button
-		boolean likeStory = false;
-	    if (view.getId() == R.id.like_story) {
-	    	likeStory = true;
+		RatingBar ratingBar = (RatingBar) findViewById(R.id.rating_bar);
+		int rating = (int) Math.round(ratingBar.getRating() * 2.5);
 		
-	    	// Update rating if user hit like button
-			try {
-				// Store json object with value of user rating
-				JSONObject storyRate = getStoryObj();	
-				storyRate.put("like", likeStory);
-				
-				// Post json data with rating to server
-				Utility.postJsonData(storyRate.toString(), getResources().getString(R.string.server_rate_story));
+    	// Update rating if user hit like button
+		try {
+			// Store json object with value of user rating
+			JSONObject storyRate = getStoryObj();	
+			storyRate.put("rating", rating);
 			
-			} catch (Exception e) {
-				getResources().getString(R.string.server_error);
-				e.printStackTrace();
-			}
-	    }
+			// Post json data with rating to server
+			Utility.postJsonData(storyRate.toString(), getResources().getString(R.string.server_rate_story));
+		
+		} catch (Exception e) {
+			getResources().getString(R.string.server_error);
+			e.printStackTrace();
+		}
 	    // Go back to main activity after sending rating
 	    NavUtils.navigateUpFromSameTask(this);
 	}
 	
 	public JSONObject getStoryObj() { return storyObj; }
+	
+    public void goBack(View view) {
+    	finish();
+    }
+
 }

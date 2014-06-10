@@ -3,10 +3,12 @@
 	<!--  Titles -->
     <string name="app_name">Mico Meu</string>
     <string name="title_activity_display_story">Poderia ser pior&#8230;</string>
+    <string name="rate_dialog_title">Avalie a história</string>
+    
     
     <!-- Settings and error messages -->
-    <string name="server_send_story">http://192.168.25.11:8000/server/send</string>
-    <string name="server_rate_story">http://192.168.25.11:8000/server/rate</string>
+    <string name="server_send_story">http://192.168.43.195:8000/server/send</string>
+    <string name="server_rate_story">http://192.168.43.195:8000/server/rate</string>
     <string name="server_error">Não foi possível conectar ao servidor&#8230;</string>
     <string name="no_story_error">Você já viu todas as histórias! Chame seus amigos para compartilhar a deles!</string>
     <string name="action_settings">Settings</string>
@@ -16,14 +18,30 @@
     <string name="num_views">com.example.micomeu.NUM_VIEWS</string>
     
     <!--  Buttons -->
-    <string name="send_story">Enviar</string>
-    <string name="like_story">Curtir</string>
-    <string name="dislike_story">Descurtir</string>
+    <string name="send">Enviar</string>
     <string name="view_story">Ver Mico</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancelar</string>
+    
     
     
     <!--  Others -->
     <string name="edit_story">Escreva seu mico aqui</string>
+    
+    <!-- Colors -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="holo_gray_bright">#33CCCCCC</color>
+    <color name="holo_blue_bright">#ff00ddff</color>  
+    <color name="holo_blue_light">#ff33b5e5</color>
+    <color name="holo_gray_light">#33999999</color>
+    <color name="disabled_button">#3f3f3f</color>
+    
+    <drawable name="screen_background_holo_light">#fff3f3f3</drawable>
+    <drawable name="screen_background_holo_dark">#ff000000</drawable>
+    
+    
+    
     
 
 </resources>
