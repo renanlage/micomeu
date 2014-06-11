@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.ActionBarActivity;
-import android.text.format.Time;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,33 +32,7 @@ public class MainActivity extends ActionBarActivity {
 		
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
-		// Check if user can view another story
-		// Get the current time in milliseconds
-		Time today = new Time(Time.getCurrentTimezone());
-		today.setToNow();
-		long now_time = today.toMillis(false);
-		
-		// Get last saved time
-		SharedPreferences sharedPref = getSharedPreferences(getString(R.string.preference_file), Context.MODE_PRIVATE);
-
-		long numViews = sharedPref.getLong(getString(R.string.num_views), 1000);
-		long saved_time = sharedPref.getLong(getString(R.string.last_access_time), now_time);
-				
-		// Increment in 1 for each day since last visit
-		today.setToNow();
-		now_time = today.toMillis(false);
-		long time_passed = (now_time - saved_time) / Long.valueOf(86400000);
-		numViews += time_passed;
-		
-		// If any number of views was incremented update on shared preferences
-		if (time_passed > 0) {
-			SharedPreferences.Editor editor = sharedPref.edit();
-			editor.putLong(getString(R.string.last_access_time), now_time);
-			editor.commit();
-		}
-		
-		
+			
 		if (savedInstanceState == null) {
 			getSupportFragmentManager().beginTransaction()
 					.add(R.id.container, new PlaceholderFragment()).commit();

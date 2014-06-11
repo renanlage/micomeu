@@ -26,6 +26,7 @@ import android.widget.TextView;
 public class DisplayStoryActivity extends ActionBarActivity {
 	
 	private JSONObject storyObj;
+	private int numRatings;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -37,18 +38,28 @@ public class DisplayStoryActivity extends ActionBarActivity {
 		String jsonStr = intent.getStringExtra(MainActivity.SERVER_STORY);
 	
 		// Obtain user story in json data
-		String story, score = "0", id = "0";
+		
+		String story;
+		Integer score = 0, id = 0;
 		try {
 			// If the json string is empty show the error message
 			if (jsonStr.equals("")) {
 				story = getResources().getString(R.string.no_story_error);
 			} else {
-				// Get text and id from json
-				storyObj = new JSONObject(jsonStr);
-				story = (String) storyObj.get("text");
-				score = Integer.toString((Integer) storyObj.get("rating"));
-				int tempId = (Integer) storyObj.get("id");
-				id = Integer.toString(tempId);
+				// Get text, id, score and number of ratings from json
+				JSONObject recvStory = new JSONObject(jsonStr);
+				story = (String) recvStory.get("text");
+				score = (Integer) recvStory.get("score");
+				id = (Integer) recvStory.get("id");
+				numRatings = (Integer) recvStory.get("nratings");
+				
+				// Save id of story for future use (rating)
+				storyObj = new JSONObject();
+				storyObj.put("id", id);
+				
+				// Set the number of ratings the user can give
+				RatingBar ratingBar = (RatingBar)findViewById(R.id.rating_bar);
+				ratingBar.setNumStars(numRatings - 1);
 			}
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -68,11 +79,11 @@ public class DisplayStoryActivity extends ActionBarActivity {
 			
 			// Append id if story read
 			SharedPreferences.Editor editor = sharedPref.edit();
-			read_ids.add(id);
+			read_ids.add(id.toString());
 			editor.putStringSet(getString(R.string.saved_ids), read_ids);
 			editor.commit();
 			
-		// Disable ratingbar and send button if story not received
+		// Disable rating bar and send button if story not received
 		} else {
 			Button sendRate = (Button) findViewById(R.id.send_rate);
 			sendRate.setEnabled(false);
@@ -95,7 +106,7 @@ public class DisplayStoryActivity extends ActionBarActivity {
 		storyView.setText(story);
 		// Set the text in the score view to the story rating
 		TextView scoreView = (TextView) findViewById(R.id.story_score);
-		scoreView.setText(score);
+		scoreView.setText(score.toString());
 	}
 
 	@Override
@@ -130,13 +141,16 @@ public class DisplayStoryActivity extends ActionBarActivity {
 	public void rateStory(View view) {
 		
 		RatingBar ratingBar = (RatingBar) findViewById(R.id.rating_bar);
-		int rating = (int) Math.round(ratingBar.getRating() * 2.5);
+		int rating = (int) Math.round(ratingBar.getRating());
+		System.out.println(rating);
 		
     	// Update rating if user hit like button
 		try {
 			// Store json object with value of user rating
 			JSONObject storyRate = getStoryObj();	
 			storyRate.put("rating", rating);
+			
+			System.out.println(storyRate.toString());
 			
 			// Post json data with rating to server
 			Utility.postJsonData(storyRate.toString(), getResources().getString(R.string.server_rate_story));

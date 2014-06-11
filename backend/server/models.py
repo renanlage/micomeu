@@ -14,16 +14,16 @@ class Story(models.Model):
 				}
 
 class Rating(models.Model):
-	story = models.OneToOneField(Story)
-	score = models.IntegerField()
-	nratings = models.IntegerField()
-
-	def add(self, new_rating):
-		new_score = self.score * self.nratings
-		new_score += float(new_rating)
-		self.nratings += 1
-		self.score = round(new_score / self.nratings)
+	label = models.CharField(max_length = 200, unique = True)
+	value = models.IntegerField(unique = True)
 
 	def __str__(self):
-		return "rating of {0} = {1}".format(self.story.id, self.score)
+		return "{0} - {1}".format(self.label, self.value)
+
+class Vote(models.Model):
+	rating = models.ForeignKey(Rating)
+	story = models.ForeignKey(Story)
+
+	def __str__(self):
+		return "rating of {0} = {1}".format(self.story.id, self.rating.value)
 
